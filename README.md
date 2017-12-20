@@ -1,2 +1,2 @@
-# opencv-101
+# OpenCV-101
 Test de la librairie OpenCV
