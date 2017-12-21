@@ -57,6 +57,7 @@ int main (void) {
       ellipse( webcamImage, center, Size( faces[i].width/2, faces[i].height/2), 0, 0, 360, Scalar( 255, 0, 255 ), 4, 8, 0);
       // Recherche des yeux dans chaque visage
       imageVisage = simpleImage(faces[i]);
+      imshow("Visage " + std::to_string(i), imageVisage);
       eyes_cascade.detectMultiScale(imageVisage, eyes, 1.1, 2, 0 | CASCADE_SCALE_IMAGE, Size(30,30));
       for( size_t j = 0; j < eyes.size(); j++ )
       {
