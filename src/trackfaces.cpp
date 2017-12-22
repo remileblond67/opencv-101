@@ -1,8 +1,10 @@
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
+#include <opencv2/tracking.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/objdetect.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/video.hpp>
 #include <iostream>
 #include <vector>
 
@@ -32,16 +34,27 @@ int main (void) {
   // Image capturée par la WebCam
   Mat webcamImage;
   // Image de présentation (avec texte et repérage)
-  Mat presImage;
+  Mat imagePresentation;
   // Image de chaque visage
   Mat imageVisage;
+  // Masque de mouvement
+  Mat imageMvt;
+
+  Rect2d roi;
+  // create a tracker object
+  Ptr<Tracker> tracker = TrackerKCF::create();
 
   std::vector<Rect> faces;
   std::vector<Rect> eyes;
 
+  // Variables de recherche de l'arrière-plan
+  Ptr<BackgroundSubtractor> substBG;
+  Mat fgImage;
+
   Scalar couleur_titre = Scalar(255,255,255);
   Scalar couleur_visage = Scalar(255,0,255);
   Scalar couleur_yeux = Scalar(255,0,0);
+
 
   int key;
 
@@ -58,9 +71,19 @@ int main (void) {
   // Caracteristiques du flux de la WebCam
   printf("Résolution webcam : %0.f x %0.f à %0.f fps\n", webcamCapture.get(CV_CAP_PROP_FRAME_WIDTH), webcamCapture.get(CV_CAP_PROP_FRAME_HEIGHT), webcamCapture.get(CV_CAP_PROP_FPS));
 
+  // Modèle de détection de l'arrière-plan
+  substBG = createBackgroundSubtractorMOG2(200, 16, true);
+  webcamImage = lectureWebcam(webcamCapture);
+
   while (webcamCapture.grab()) {
     webcamImage = lectureWebcam(webcamCapture);
-    webcamImage.copyTo(presImage);
+    webcamImage.copyTo(imagePresentation);
+
+    // Applique l'image courante à la recherche de l'arrière_plan
+    substBG->apply(webcamImage, imageMvt);
+
+    imshow("Masque de fond", imageMvt);
+
     faces = rechercheVisages(webcamImage);
     // Pour chaque visage trouvé
     for (size_t i = 0; i < faces.size(); i++) {
@@ -71,7 +94,7 @@ int main (void) {
         // Marquage des yeux
         Point eye_center( faces[i].x + eyes[j].x + eyes[j].width/2, faces[i].y + eyes[j].y + eyes[j].height/2 );
         int radius = cvRound( (eyes[j].width + eyes[j].height)*0.25 );
-        circle( presImage, eye_center, radius, couleur_yeux, 4, 8, 0 );
+        circle( imagePresentation, eye_center, radius, couleur_yeux, 4, 8, 0 );
       }
       // Marquage du visage
       Point center( faces[i].x + faces[i].width/2, faces[i].y + faces[i].height/2 );
@@ -80,18 +103,21 @@ int main (void) {
       Point pt2 (faces[i].x+faces[i].width, faces[i].y + faces[i].height);
       Point pt_text (faces[i].x, faces[i].y-10 );
 
-      putText(presImage, "Visage "+ std::to_string(i), pt_text, FONT_HERSHEY_SIMPLEX, 0.5, couleur_visage, 2);
+      putText(imagePresentation, "Visage "+ std::to_string(i), pt_text, FONT_HERSHEY_SIMPLEX, 0.5, couleur_visage, 2);
       //ellipse( webcamImage, center, Size( faces[i].width/2, faces[i].height/2), 0, 0, 360, couleur_visage, 4, 8, 0);
-      rectangle(presImage, pt1, pt2, couleur_visage, 4, 8, 0);
+      rectangle(imagePresentation, pt1, pt2, couleur_visage, 4, 8, 0);
     }
     // Affichage dans l'image du nombre de visages détectés
-    putText(presImage, "Nombre de visages : " + std::to_string (faces.size()), Point(10,25), FONT_HERSHEY_SIMPLEX, 1, couleur_titre, 2);
+    putText(imagePresentation, "Nombre de visages : " + std::to_string (faces.size()), Point(10,25), FONT_HERSHEY_SIMPLEX, 1, couleur_titre, 2);
     // Affichage de l'image contenant les marquages
-    imshow(window_name, presImage);
+    imshow(window_name, imagePresentation);
+    // Affichaage de l'image en supprimant l'arrière-plan
+
     key = waitKey(1);
     if( (char)key == 27 ) { break; } // escape
     //printf("Id image traitée : %0.f\n", webcamCapture.get(CV_CAP_PROP_POS_MSEC));
   }
+  destroyAllWindows();
   return 0;
 }
 
