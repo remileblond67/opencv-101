@@ -1,5 +1,5 @@
 PHONY  := all clean
-TARGET := opencv-webcam
+TARGET := trackfaces
 
 SRC_DIR   := src
 CPP_FILES := $(wildcard $(SRC_DIR)/*.cpp)

@@ -30,4 +30,4 @@
 *.exe
 *.out
 *.app
-opencv-webcam
+trackfaces
