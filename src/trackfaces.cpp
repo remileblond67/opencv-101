@@ -31,12 +31,13 @@ int main (void) {
   VideoCapture webcamCapture(0);
   // Image capturée par la WebCam
   Mat webcamImage;
-  // Image simplifiée
-  Mat simpleImage;
+  // Image de présentation (avec texte et repérage)
+  Mat presImage;
+  // Image de chaque visage
+  Mat imageVisage;
 
   std::vector<Rect> faces;
   std::vector<Rect> eyes;
-  Mat imageVisage;
 
   Scalar couleur_titre = Scalar(255,255,255);
   Scalar couleur_visage = Scalar(255,0,255);
@@ -59,6 +60,7 @@ int main (void) {
 
   while (webcamCapture.grab()) {
     webcamImage = lectureWebcam(webcamCapture);
+    webcamImage.copyTo(presImage);
     faces = rechercheVisages(webcamImage);
     // Pour chaque visage trouvé
     for (size_t i = 0; i < faces.size(); i++) {
@@ -69,7 +71,7 @@ int main (void) {
         // Marquage des yeux
         Point eye_center( faces[i].x + eyes[j].x + eyes[j].width/2, faces[i].y + eyes[j].y + eyes[j].height/2 );
         int radius = cvRound( (eyes[j].width + eyes[j].height)*0.25 );
-        circle( webcamImage, eye_center, radius, couleur_yeux, 4, 8, 0 );
+        circle( presImage, eye_center, radius, couleur_yeux, 4, 8, 0 );
       }
       // Marquage du visage
       Point center( faces[i].x + faces[i].width/2, faces[i].y + faces[i].height/2 );
@@ -78,14 +80,14 @@ int main (void) {
       Point pt2 (faces[i].x+faces[i].width, faces[i].y + faces[i].height);
       Point pt_text (faces[i].x, faces[i].y-10 );
 
-      putText(webcamImage, "Visage "+ std::to_string(i), pt_text, FONT_HERSHEY_SIMPLEX, 0.5, couleur_visage, 2);
+      putText(presImage, "Visage "+ std::to_string(i), pt_text, FONT_HERSHEY_SIMPLEX, 0.5, couleur_visage, 2);
       //ellipse( webcamImage, center, Size( faces[i].width/2, faces[i].height/2), 0, 0, 360, couleur_visage, 4, 8, 0);
-      rectangle(webcamImage, pt1, pt2, couleur_visage, 4, 8, 0);
+      rectangle(presImage, pt1, pt2, couleur_visage, 4, 8, 0);
     }
     // Affichage dans l'image du nombre de visages détectés
-    putText(webcamImage, "Nombre de visages : " + std::to_string (faces.size()), Point(10,25), FONT_HERSHEY_SIMPLEX, 1, couleur_titre, 2);
+    putText(presImage, "Nombre de visages : " + std::to_string (faces.size()), Point(10,25), FONT_HERSHEY_SIMPLEX, 1, couleur_titre, 2);
     // Affichage de l'image contenant les marquages
-    imshow(window_name, webcamImage);
+    imshow(window_name, presImage);
     key = waitKey(1);
     if( (char)key == 27 ) { break; } // escape
     //printf("Id image traitée : %0.f\n", webcamCapture.get(CV_CAP_PROP_POS_MSEC));
